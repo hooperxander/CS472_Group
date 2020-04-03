@@ -4,7 +4,7 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.neighbors import KNeighborsRegressor
 
 from CS472_Group.DataPreprocessor import DataPreprocessor
-
+from CS472_Group.FeatureSelector import FeatureSelector
 
 class BaseLine:
     def fit(self):
@@ -23,6 +23,10 @@ class BaseLine:
 
 preprocessor = DataPreprocessor()
 X_train, X_test, y_train, y_test = preprocessor.get_train_test_data()
+
+# Feature selection
+selector = FeatureSelector()
+new_X_train, new_X_test = selector.select_features(X_train, y_train, X_test, 30)
 
 clf = MLPRegressor(solver='lbfgs', alpha=1e-5,
                    hidden_layer_sizes=(10, 10, 10), random_state=1)
