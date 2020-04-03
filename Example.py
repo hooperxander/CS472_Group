@@ -23,10 +23,14 @@ class BaseLine:
     def get_params(self, deep=False):
         return []
 
-preprocessor = DataPreprocessor()
-X_train, X_test, y_train, y_test = preprocessor.get_train_test_data(norm=True)
 
-#BClass = MLPRegressor(max_iter=10000)
+
+preprocessor = DataPreprocessor()
+
+"""
+Search fitting stuff
+
+BClass = MLPRegressor(max_iter=10000)
 parameter_space = {
     'hidden_layer_sizes': [(1000,), (300, 300), (100, 100, 100, 100)],
     'activation': ['tanh', 'relu', 'logistic'],
@@ -37,6 +41,7 @@ parameter_space = {
     'early_stopping': [True, False]
 }
 
+
 #clf = RandomizedSearchCV(BClass, parameter_space, n_jobs=6, cv=3, verbose=10, n_iter=50)
 #clf.fit(X_train, y_train)
 #print('Best parameters found:\n', clf.best_params_)
@@ -45,13 +50,18 @@ parameter_space = {
 #BClass = MLPRegressor(max_iter=10000, activation='logistic', alpha=0.001, early_stopping=False,
 #                      hidden_layer_sizes=[300, 300], learning_rate='constant', momentum=0.48757434953041645, solver='adam')
 #BClass.fit(X_train, y_train)
+"""
 
-BClass = MLPRegressor(max_iter=10000, hidden_layer_sizes=[1000])
-BClass.fit(X_train, y_train)
-pred = BClass.predict(X_test)
-error = y_test - pred
-total = np.sum(error ** 2)
-print(total)
+total = 0
+iters = 5
+for index in range(iters):
+    X_train, X_test, y_train, y_test = preprocessor.get_train_test_data(norm=True)
+    BClass = MLPRegressor(max_iter=10000, hidden_layer_sizes=[1000], early_stopping=True, validation_fraction=.1, n_iter_no_change=300)
+    BClass.fit(X_train, y_train)
+    pred = BClass.predict(X_test)
+    error = y_test - pred
+    total += np.sum(error ** 2)
+print(total/iters)
 
 #knn = KNeighborsRegressor(n_neighbors=3)
 #knn.fit(X_train, y_train)

@@ -7,7 +7,7 @@ from sklearn.preprocessing import minmax_scale
 
 class DataPreprocessor:
     def get_train_test_data(self, norm=False):
-        data = pd.read_csv('data.csv')
+        data = pd.read_csv('VTI4.7.2.csv')
         data_list = data.values
         #data_list = torch.tensor(data.values).tolist()
 
@@ -19,11 +19,11 @@ class DataPreprocessor:
                 if j == len(data_list[i]) - 1:
                     y.append(data_list[i][j])
                 else:
-                    row.append(data_list[i][j])
+                        row.append(data_list[i][j])
             X.append(row)
 
         if norm:
             X = minmax_scale(X)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, train_size=0.75)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, train_size=0.8)
         return X_train, X_test, y_train, y_test
 
