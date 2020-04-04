@@ -2,48 +2,74 @@ import numpy as np
 from sklearn.model_selection import cross_val_score
 from sklearn.neural_network import MLPRegressor
 from sklearn.neighbors import KNeighborsRegressor
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import RandomizedSearchCV
+from DataPreprocessor import DataPreprocessor
+from sklearn.model_selection import cross_validate
+from sklearn.metrics import make_scorer
+from scipy.stats import uniform
+from FeatureSelector import *
+from sklearn.utils import shuffle
 
-from CS472_Group.DataPreprocessor import DataPreprocessor
-from CS472_Group.FeatureSelector import FeatureSelector
-
-class BaseLine:
-    def fit(self):
-        pass
-
-    def predict(self, X):
-        pass
-
-    def score(self, X, y):
-        x = np.array(X)
-        error = y - x[:, 0]
-        return np.sum(error ** 2)
-
-    def get_params(self, deep=False):
-        return []
 
 preprocessor = DataPreprocessor()
-X_train, X_test, y_train, y_test = preprocessor.get_train_test_data()
 
-# Feature selection
-selector = FeatureSelector()
-new_X_train, new_X_test = selector.select_features(X_train, y_train, X_test, 30)
+def mse_error(y_true, y_pred):
+    error = y_true - y_pred
+    return np.sum(error ** 2)/(len(y_pred))
 
-clf = MLPRegressor(solver='lbfgs', alpha=1e-5,
-                   hidden_layer_sizes=(10, 10, 10), random_state=1)
+
+X_train, y_train = preprocessor.get_train_test_data(norm=True, test=0)
+BClass = MLPRegressor(max_iter=10000, hidden_layer_sizes=[50,50,50,50], early_stopping=True, validation_fraction=.1, n_iter_no_change=300,
+                      activation='tanh', alpha=0.00001, learning_rate='adaptive', momentum=0.3, solver='sgd')
+
+scorer = make_scorer(mse_error, greater_is_better=False)
+
+"""
+#Search hyper parameter tuning stuff
+
+parameter_space = {
+    'activation': ['tanh', 'relu', 'logistic'],
+    'solver': ['sgd', 'adam'],
+    'alpha': [0.001, 0.0001, 0.00001],
+    'learning_rate': ['constant', 'adaptive'],
+    'momentum': [0.1, 0.3, 0.5, 0.7, 0.9],
+}
+
+clf = GridSearchCV(BClass, parameter_space, n_jobs=6, cv=3, verbose=10, scoring=scorer)
 clf.fit(X_train, y_train)
-print(clf.predict(X_test))
+print('Best parameters found:\n', clf.best_params_)
+"""
 
-knn = KNeighborsRegressor(n_neighbors=3)
-knn.fit(X_train, y_train)
 
-print(knn.predict(X_test))
+"""
+#Feature selection stuff
 
+fs = FeatureSelector()
+fs.select_features(BClass, X_train, y_train, scorer=scorer, k_features=(1, 4))
+"""
+
+#Cross validation test. Averaging 5 different 6-fold CV averages
+total = 0
+iters = 5
+cross=6
+for i in range(iters):
+    shuffle(X_train, y_train)
+    scores = cross_validate(BClass, X_train, y_train, scoring=scorer, cv=cross, n_jobs=6, return_train_score=True, verbose=10)
+    print(scores['test_score'])
+    total += np.sum(scores['test_score']) / cross
+total /= iters
+print("Average: ", total)
+
+"""
+#Baseline MSE = 15.18
+#This uses the whole file, so we don't ever have to re-calculate it.
 # BASELINE
 total = 0
-for index in range(10):
-    X_train, X_test, y_train, y_test = preprocessor.get_train_test_data()
-    x = np.array(X_test)
-    error = y_test - x[:, 0]
-    total = total + np.sum(error ** 2)
-print("average SSE" + str(total/10))
-
+#for index in range(10):
+X_train, X_test, y_train, y_test = preprocessor.get_train_test_data(test=0)
+x = np.array(X_train)
+error = y_train - x[:, 0]
+total = total + np.sum(error ** 2)
+print("Baseline MSE " + str(total/x.shape[0]))
+"""
